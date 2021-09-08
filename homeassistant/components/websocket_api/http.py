@@ -60,7 +60,7 @@ class WebSocketHandler:
         """Initialize an active connection."""
         self.hass = hass
         self.request = request
-        self.wsock: web.WebSocketResponse | None = None
+        self.wsock = web.WebSocketResponse()
         self._to_write: asyncio.Queue = asyncio.Queue(maxsize=MAX_PENDING_MSG)
         self._handle_task: asyncio.Task | None = None
         self._writer_task: asyncio.Task | None = None
@@ -70,7 +70,6 @@ class WebSocketHandler:
     async def _writer(self) -> None:
         """Write outgoing messages."""
         # Exceptions if Socket disconnected or cancelled by connection handler
-        assert self.wsock is not None
         with suppress(RuntimeError, ConnectionResetError, *CANCELLATION_ERRORS):
             while not self.wsock.closed:
                 message = await self._to_write.get()
@@ -142,8 +141,14 @@ class WebSocketHandler:
     async def async_handle(self) -> web.WebSocketResponse:
         """Handle a websocket response."""
         request = self.request
-        wsock = self.wsock = web.WebSocketResponse(heartbeat=55)
-        await wsock.prepare(request)
+        wsock = self.wsock
+        try:
+            async with async_timeout.timeout(10):
+                await wsock.prepare(request)
+        except asyncio.TimeoutError:
+            self._logger.warning("Timeout preparing request from %s", request.remote)
+            return wsock
+
         self._logger.debug("Connected from %s", request.remote)
         self._handle_task = asyncio.current_task()
 
@@ -199,7 +204,14 @@ class WebSocketHandler:
 
             # Command phase
             while not wsock.closed:
-                msg = await wsock.receive()
+                try:
+                    # Wait maximum 55 seconds to wait for client heartbeat.
+                    # A bug in aiohttp is causing heartbeat timeout not to cancel
+                    # this task.
+                    msg = await wsock.receive(55)
+                except asyncio.TimeoutError:
+                    await wsock.ping()
+                    continue
 
                 if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING):
                     break
