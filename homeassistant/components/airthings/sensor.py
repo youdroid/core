@@ -17,9 +17,11 @@ from homeassistant.const import (
     DEVICE_CLASS_CO2,
     DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_PRESSURE,
+    DEVICE_CLASS_SIGNAL_STRENGTH,
     DEVICE_CLASS_TEMPERATURE,
     PERCENTAGE,
     PRESSURE_MBAR,
+    SIGNAL_STRENGTH_DECIBELS,
     TEMP_CELSIUS,
 )
 from homeassistant.core import HomeAssistant
@@ -71,6 +73,17 @@ SENSORS: dict[str, SensorEntityDescription] = {
         key="voc",
         native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
         name="VOC",
+    ),
+    "rssi": SensorEntityDescription(
+        key="rssi",
+        device_class=DEVICE_CLASS_SIGNAL_STRENGTH,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS,
+        name="RSSI",
+    ),
+    "virusRisk": SensorEntityDescription(
+        key="virusRisk",
+        native_unit_of_measurement="#",
+        name="Virus Risk (1-10)",
     ),
 }
 
