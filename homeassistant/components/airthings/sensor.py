@@ -82,8 +82,8 @@ SENSORS: dict[str, SensorEntityDescription] = {
     ),
     "virusRisk": SensorEntityDescription(
         key="virusRisk",
-        native_unit_of_measurement="#",
-        name="Virus Risk (1-10)",
+        native_unit_of_measurement="/10",
+        name="Virus Risk",
     ),
 }
 
