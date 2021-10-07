@@ -1,7 +1,14 @@
 {
-  "domain": "rtorrent",
-  "name": "rTorrent",
-  "documentation": "https://www.home-assistant.io/integrations/rtorrent",
-  "codeowners": [],
-  "iot_class": "local_polling"
+  "domain": "torrent",
+  "name": "torrent",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/torrent",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@Gogo"
+  ]
 }
