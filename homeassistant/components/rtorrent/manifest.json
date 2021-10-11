@@ -1,6 +1,6 @@
 {
-  "domain": "torrent",
-  "name": "torrent",
+  "domain": "rtorrent",
+  "name": "rtorrent",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/torrent",
   "requirements": [],
@@ -9,6 +9,6 @@
   "homekit": {},
   "dependencies": [],
   "codeowners": [
-    "@Gogo"
+    "@youdroid"
   ]
 }

@@ -1,18 +1,15 @@
+"""Rtorrent API client class."""
 import xmlrpc.client as xmlrpc
 import logging
-from .errors import AuthenticationError, CannotConnect, UnknownError
+from .errors import CannotConnect
 from homeassistant.const import STATE_OFF, STATE_ON
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TorrentReturn:
-    def __init__(self, value=None, available=None):
-        self.value = value
-        self.available = available
-
-
 class Torrent:
+    """Representation of torrent object."""
+
     def __init__(self, hash, name, status, size, downloaded):
         self.hash = hash
         self.name = name
@@ -28,15 +25,13 @@ class Torrent:
 
 
 class RTorrentClient:
+    """API client class with xmlrpc.client."""
+
     def __init__(self, url, ssl=None):
         self.url = url
         self.ssl_context = ssl
         self.connexion = self._check_conn(self._get_xmlrpc_conn())
         self.available: bool = True
-
-        # assert (
-        #    self._check_conn(self._get_xmlrpc_conn()) is True
-        # ), "rTorrent connection failed ici"
 
     def _check_conn(self, conn):
         """Verify given ServerProxy connection is to an rTorrent XMLRPC server"""
@@ -60,6 +55,7 @@ class RTorrentClient:
         return xmlrpc.ServerProxy(self.url, context=self.ssl_context)
 
     def _get_all_torrent(self):
+        """Get all torrent function"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2(
@@ -88,6 +84,7 @@ class RTorrentClient:
         return torrents
 
     def _get_global_speed_upload(self):
+        """Get speed upload"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.throttle.global_up.rate()
@@ -98,6 +95,7 @@ class RTorrentClient:
         return data
 
     def _get_global_speed_download(self):
+        """Get speed download"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.throttle.global_down.rate()
@@ -108,6 +106,7 @@ class RTorrentClient:
         return data
 
     def _get_stopped_torrent(self):
+        """Get stopped torrent"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2("", "stopped")
@@ -118,6 +117,7 @@ class RTorrentClient:
         return len(data)
 
     def _get_completed_torrent(self):
+        """Get completed torrent"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2("", "complete")
@@ -128,6 +128,7 @@ class RTorrentClient:
         return len(data)
 
     def _get_uploading_torrents(self):
+        """Get uploading torrent"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2("", "seeding", "d.up.rate=")
@@ -138,6 +139,7 @@ class RTorrentClient:
         return len(data)
 
     def _get_downloading_torrents(self):
+        """Get downloading torrent"""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2("", "leeching", "d.down.rate=")
@@ -170,6 +172,7 @@ class RTorrentClient:
             self.available = False
 
     def is_active_torrent(self):
+        """Check is active torrent."""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
             call.d.multicall2("", "started", "d.is_active=")
@@ -183,8 +186,39 @@ class RTorrentClient:
                 return STATE_ON
         return STATE_OFF
 
-    def _request(self, *args):
-        call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
-        call.d.multicall2(args)
-        data = call()
-        return data[0]
+    def add_torrent(self, torrent):
+        """Add torrent."""
+        try:
+            call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
+            call.load_start(torrent)
+            data = call()[0]
+            _LOGGER.info(data)
+        except (xmlrpc.ProtocolError, ConnectionRefusedError, OSError) as ex:
+            _LOGGER.error("Connection to rtorrent failed (%s)", ex)
+
+    def remove_torrent(self, torrent):
+        """Remove torrent."""
+        try:
+            call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
+            call.d.erase(torrent)
+            call()[0]
+        except (xmlrpc.ProtocolError, ConnectionRefusedError, OSError) as ex:
+            _LOGGER.error("Connection to rtorrent failed (%s)", ex)
+
+    def start_torrent(self, torrent):
+        """Start torrent."""
+        try:
+            call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
+            call.d.resume(torrent)
+            call()[0]
+        except (xmlrpc.ProtocolError, ConnectionRefusedError, OSError) as ex:
+            _LOGGER.error("Connection to rtorrent failed (%s)", ex)
+
+    def pause_torrent(self, torrent):
+        """Pause torrent."""
+        try:
+            call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
+            call.d.pause(torrent)
+            call()[0]
+        except (xmlrpc.ProtocolError, ConnectionRefusedError, OSError) as ex:
+            _LOGGER.error("Connection to rtorrent failed (%s)", ex)

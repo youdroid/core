@@ -1,18 +1,11 @@
-"""Support for monitoring the rtorrent BitTorrent client API."""
+"""Support for monitoring the rtorrent."""
 import logging
-import xmlrpc.client
-
-import voluptuous as vol
-
-from homeassistant.components.switch import PLATFORM_SCHEMA
-from homeassistant.const import CONF_NAME, CONF_URL, STATE_OFF, STATE_ON
-from homeassistant.exceptions import PlatformNotReady
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import ToggleEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 from .const import DOMAIN
+from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.components.switch import SwitchEntity
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -21,7 +14,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities([RTorrentSwitch(rt_client, DOMAIN)])
 
 
-class RTorrentSwitch(ToggleEntity):
+class RTorrentSwitch(SwitchEntity):
     """Representation of a rtorrent switch."""
 
     def __init__(self, rt_client, name):
@@ -49,6 +42,11 @@ class RTorrentSwitch(ToggleEntity):
     def available(self):
         """Return true if device is available."""
         return self.rt_client.available
+
+    @property
+    def unique_id(self):
+        """Return Unique ID string."""
+        return f"{self._name}_switch"
 
     def turn_on(self, **kwargs):
         """Turn the device on."""

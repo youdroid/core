@@ -1,17 +1,12 @@
-"""Support for monitoring the rtorrent BitTorrent client API."""
+"""Platform for sensor integration."""
 import logging
-import xmlrpc.client
-
-import voluptuous as vol
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
 
-from homeassistant.helpers.typing import HomeAssistantType
-from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import DATA_RATE_KILOBYTES_PER_SECOND, STATE_IDLE
-from homeassistant.exceptions import PlatformNotReady
-import homeassistant.helpers.config_validation as cv
+
+from .const import DOMAIN, STATE_TORRENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +19,6 @@ SENSOR_TYPE_COMPLETE_TORRENTS = "complete_torrents"
 SENSOR_TYPE_UPLOADING_TORRENTS = "uploading_torrents"
 SENSOR_TYPE_DOWNLOADING_TORRENTS = "downloading_torrents"
 SENSOR_TYPE_ACTIVE_TORRENTS = "active_torrents"
-
-from .const import DOMAIN, STATE_TORRENT
 
 
 SENSOR_TYPES = {
@@ -42,7 +35,7 @@ SENSOR_TYPES = {
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-
+    """Add sensors for passed config_entry in HA."""
     rt_client = hass.data[DOMAIN][config_entry.entry_id]
 
     sensors = [
@@ -55,11 +48,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         RTorrentTorrentSensor(SENSOR_TYPE_DOWNLOADING_TORRENTS, rt_client),
         RTorrentTorrentSensor(SENSOR_TYPE_ACTIVE_TORRENTS, rt_client),
     ]
-    async_add_entities(sensors, True)
+    async_add_entities(sensors)
 
 
 class RTorrentSensor(SensorEntity):
-    """Representation of an rtorrent sensor."""
+    """Representation of an Generic rtorrent sensor."""
 
     def __init__(self, sensor_type, rtorrent_client):
         """Initialize the sensor."""
@@ -92,19 +85,34 @@ class RTorrentSensor(SensorEntity):
         """Return the unit of measurement of this entity, if any."""
         return self._unit_of_measurement
 
+    @property
+    def unique_id(self):
+        """Return Unique ID string."""
+        return f"{self._name}_sensor"
+
 
 class RTorrentSpeedSensor(RTorrentSensor):
+    """Representation of an speed rtorrent sensor."""
+
     def update(self):
-        """Get the latest data from Transmission and updates the state."""
+        """Get the latest data from Rtorrent and updates the state."""
         if self._name == "Down Speed":
             data = self.client._get_global_speed_download()
         else:
             data = self.client._get_global_speed_upload()
         self._state = data
 
+    @property
+    def icon(self):
+        """Icon of the entity."""
+        return "mdi:door"
+
 
 class RTorrentSpeedStatus(RTorrentSensor):
+    """Representation of an speed rtorrent sensor."""
+
     def update(self):
+        """Get the latest data from Rtorrent and updates the state."""
         upload = self.client._get_global_speed_upload()
         download = self.client._get_global_speed_download()
         if upload > 0 and download > 0:
@@ -118,7 +126,10 @@ class RTorrentSpeedStatus(RTorrentSensor):
 
 
 class RTorrentTorrentSensor(RTorrentSensor):
+    """Representation of an extra rtorrent sensor."""
+
     def update(self):
+        """Get the latest data from Rtorrent and updates the state."""
         if self._name == "Stopped Torrents":
             self._state = self.client._get_stopped_torrent()
         elif self._name == "Complete Torrents":

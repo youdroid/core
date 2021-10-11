@@ -16,11 +16,10 @@ from homeassistant.const import (
     CONF_SSL,
 )
 from .const import DOMAIN
-from .errors import AuthenticationError, CannotConnect, UnknownError
+from .errors import AuthenticationError, CannotConnect
 
 _LOGGER = logging.getLogger(__name__)
 
-# TODO adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
@@ -50,33 +49,27 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     context = None if data[CONF_SSL] else ssl.SSLContext()
     try:
-        api = await hass.async_add_executor_job(RTorrentClient, url, context)
-        _LOGGER.error(api)
-        return True
+        await hass.async_add_executor_job(RTorrentClient, url, context)
     except (OSError) as error:
         logging.error("Torrent connection test failed.", exc_info=True)
         raise CannotConnect from error
-
-    raise Exception
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for torrent."""
 
     VERSION = 1
-    # TODO pick one of the available connection classes in homeassistant/config_entries.py
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
-        if user_input is None:
-            return self.async_show_form(
-                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
-            )
 
         errors = {}
 
         try:
+
+            await validate_input(self.hass, user_input)
+
             await self.hass.async_add_executor_job(
                 RTorrentClient,
                 RTorrentUtils._build_url(user_input),
