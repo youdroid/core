@@ -2,7 +2,6 @@
 import logging
 from typing import Any
 import ssl
-import voluptuous as vol
 from .client import RTorrentClient
 from .utils import RTorrentUtils
 
@@ -15,20 +14,10 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SSL,
 )
-from .const import DOMAIN
+from .const import DOMAIN, STEP_USER_DATA_SCHEMA
 from .errors import AuthenticationError, CannotConnect
 
 _LOGGER = logging.getLogger(__name__)
-
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST): str,
-        vol.Optional(CONF_USERNAME, default=""): str,
-        vol.Optional(CONF_PASSWORD, default=""): str,
-        vol.Required(CONF_PORT): int,
-        vol.Optional(CONF_SSL, default=False): bool,
-    }
-)
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -36,6 +25,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
+
     user = data[CONF_USERNAME]
     password = data[CONF_PASSWORD]
     proto = "https" if data[CONF_SSL] else "http"
@@ -65,26 +55,26 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
 
         errors = {}
+        if user_input is not None:
+            try:
 
-        try:
+                await validate_input(self.hass, user_input)
 
-            await validate_input(self.hass, user_input)
+                await self.hass.async_add_executor_job(
+                    RTorrentClient,
+                    RTorrentUtils._build_url(user_input),
+                    RTorrentUtils._is_ssl(user_input),
+                )
 
-            await self.hass.async_add_executor_job(
-                RTorrentClient,
-                RTorrentUtils._build_url(user_input),
-                RTorrentUtils._is_ssl(user_input),
-            )
-
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except AuthenticationError:
-            errors["base"] = "invalid_auth"
-        except Exception:
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
-        else:
-            return self.async_create_entry(title=DOMAIN, data=user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except AuthenticationError:
+                errors["base"] = "invalid_auth"
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                return self.async_create_entry(title=DOMAIN, data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors

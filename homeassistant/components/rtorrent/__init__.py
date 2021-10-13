@@ -8,7 +8,12 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from .client import RTorrentClient
 from .utils import RTorrentUtils
 import xmlrpc.client as xmlrpc
-from .const import DOMAIN, PLATFORMS, SERVICE_ADD_TORRENT_SCHEMA
+from .const import (
+    DOMAIN,
+    PLATFORMS,
+    SERVICE_ADD_TORRENT_SCHEMA,
+    SERVICE_REMOVE_TORRENT_SCHEMA,
+)
 from homeassistant.helpers.typing import ConfigType
 
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +32,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up torrent from a config entry."""
 
+    client = None
     try:
         client = await hass.async_add_executor_job(
             RTorrentClient,
@@ -46,24 +52,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     def add_torrent(service: ServiceCall) -> None:
         """Add new torrent to download."""
-        r_client = None
-        for entry in hass.config_entries.async_entries(DOMAIN):
-            if entry.data["name"] == service.data["name"]:
-                r_client = hass.data[DOMAIN][entry.entry_id]
-                break
-        if r_client is None:
-            LOGGER.error("Transmission instance is not found")
-            return
-        torrent = service.data["rtorrent"]
+        torrent = service.data["torrent"]
         if torrent.startswith(
             ("http", "ftp:", "magnet:")
         ) or hass.config.is_allowed_path(torrent):
-            r_client.add_torrent(torrent)
+            client.add_torrent(torrent)
         else:
             LOGGER.warning("Could not add torrent: unsupported type or no permission")
 
-    hass.services.register(
+    def remove_torrent(service: ServiceCall) -> None:
+        """Remove torrent Rtorrent."""
+        torrent = service.data["torrent"]
+        client.remove_torrent(torrent)
+
+    hass.services.async_register(
         DOMAIN, "add_torrent", add_torrent, SERVICE_ADD_TORRENT_SCHEMA
+    )
+
+    hass.services.async_register(
+        DOMAIN, "remove_torrent", remove_torrent, SERVICE_REMOVE_TORRENT_SCHEMA
     )
 
     return True

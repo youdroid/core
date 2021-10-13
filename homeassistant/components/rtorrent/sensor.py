@@ -4,34 +4,22 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import DATA_RATE_KILOBYTES_PER_SECOND, STATE_IDLE
+from homeassistant.const import STATE_IDLE
 
-from .const import DOMAIN, STATE_TORRENT
+from .const import (
+    DOMAIN,
+    SENSOR_TYPE_CURRENT_STATUS,
+    SENSOR_TYPE_DOWNLOAD_SPEED,
+    SENSOR_TYPE_UPLOAD_SPEED,
+    SENSOR_TYPE_STOPPED_TORRENTS,
+    SENSOR_TYPE_COMPLETE_TORRENTS,
+    SENSOR_TYPE_UPLOADING_TORRENTS,
+    SENSOR_TYPE_DOWNLOADING_TORRENTS,
+    SENSOR_TYPE_ACTIVE_TORRENTS,
+    SENSOR_TYPES,
+)
 
 _LOGGER = logging.getLogger(__name__)
-
-SENSOR_TYPE_CURRENT_STATUS = "current_status"
-SENSOR_TYPE_DOWNLOAD_SPEED = "download_speed"
-SENSOR_TYPE_UPLOAD_SPEED = "upload_speed"
-SENSOR_TYPE_ALL_TORRENTS = "all_torrents"
-SENSOR_TYPE_STOPPED_TORRENTS = "stopped_torrents"
-SENSOR_TYPE_COMPLETE_TORRENTS = "complete_torrents"
-SENSOR_TYPE_UPLOADING_TORRENTS = "uploading_torrents"
-SENSOR_TYPE_DOWNLOADING_TORRENTS = "downloading_torrents"
-SENSOR_TYPE_ACTIVE_TORRENTS = "active_torrents"
-
-
-SENSOR_TYPES = {
-    SENSOR_TYPE_CURRENT_STATUS: ["Status", None],
-    SENSOR_TYPE_DOWNLOAD_SPEED: ["Down Speed", DATA_RATE_KILOBYTES_PER_SECOND],
-    SENSOR_TYPE_UPLOAD_SPEED: ["Up Speed", DATA_RATE_KILOBYTES_PER_SECOND],
-    SENSOR_TYPE_ALL_TORRENTS: ["All Torrents", STATE_TORRENT],
-    SENSOR_TYPE_STOPPED_TORRENTS: ["Stopped Torrents", STATE_TORRENT],
-    SENSOR_TYPE_COMPLETE_TORRENTS: ["Complete Torrents", STATE_TORRENT],
-    SENSOR_TYPE_UPLOADING_TORRENTS: ["Uploading Torrents", STATE_TORRENT],
-    SENSOR_TYPE_DOWNLOADING_TORRENTS: ["Downloading Torrents", STATE_TORRENT],
-    SENSOR_TYPE_ACTIVE_TORRENTS: ["Active Torrents", STATE_TORRENT],
-}
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -105,7 +93,7 @@ class RTorrentSpeedSensor(RTorrentSensor):
     @property
     def icon(self):
         """Icon of the entity."""
-        return "mdi:door"
+        return "mdi:speedometer"
 
 
 class RTorrentSpeedStatus(RTorrentSensor):

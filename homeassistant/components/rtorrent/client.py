@@ -190,7 +190,8 @@ class RTorrentClient:
         """Add torrent."""
         try:
             call = xmlrpc.MultiCall(self._get_xmlrpc_conn())
-            call.load_start(torrent)
+            # call.load_start(torrent)
+            call.load(torrent)
             data = call()[0]
             _LOGGER.info(data)
         except (xmlrpc.ProtocolError, ConnectionRefusedError, OSError) as ex:
